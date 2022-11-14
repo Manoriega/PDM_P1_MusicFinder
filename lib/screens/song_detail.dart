@@ -2,6 +2,8 @@
 
 import 'dart:ffi';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -26,7 +28,7 @@ class _SongDetailState extends State<SongDetail> {
           actions: [
             IconButton(
                 onPressed: () {
-                  if (context.read<Favorites>().isSongInList(widget.song)) {
+                  if (context.read<Favorites>().isSongInList) {
                     showDialog(
                         context: context,
                         builder: ((context) => AlertDialog(
@@ -41,21 +43,25 @@ class _SongDetailState extends State<SongDetail> {
                                     child: const Text("Cancelar")),
                                 TextButton(
                                     onPressed: () {
-                                      context
-                                          .read<Favorites>()
-                                          .removeFavorite(widget.song);
-                                      setState(() {});
+                                      removeFavorite(widget.song);
+                                      setState(() {
+                                        context
+                                            .read<Favorites>()
+                                            .setSongInList(false);
+                                      });
                                       Navigator.pop(context, 'Cancel');
                                     },
                                     child: const Text("Aceptar")),
                               ],
                             )));
                   } else {
-                    context.read<Favorites>().addFavorite(widget.song);
-                    setState(() {});
+                    addFavorite(widget.song);
+                    setState(() {
+                      context.read<Favorites>().setSongInList(true);
+                    });
                   }
                 },
-                icon: Icon(context.read<Favorites>().isSongInList(widget.song)
+                icon: Icon(context.read<Favorites>().isSongInList
                     ? Icons.favorite
                     : Icons.favorite_border))
           ],
@@ -131,5 +137,26 @@ class _SongDetailState extends State<SongDetail> {
     return SizedBox(
       height: height,
     );
+  }
+
+  void addFavorite(Song song) {
+    DocumentReference docRef = FirebaseFirestore.instance
+        .collection("music_finder_users")
+        .doc("QGAfJwz7PaNtIbwSB2ePIb87TBG2");
+    docRef.update({
+      "favorites": FieldValue.arrayUnion([song.title])
+    });
+  }
+
+  void removeFavorite(Song song) async {
+    var queryUser = await FirebaseFirestore.instance
+        .collection("music_finder_users")
+        .doc("QGAfJwz7PaNtIbwSB2ePIb87TBG2");
+    var docsRef = await queryUser.get();
+    var favoritesIds = docsRef.data()?["favorites"];
+    if (favoritesIds.contains(song.title))
+      queryUser.update({
+        "favorites": FieldValue.arrayRemove([song.title])
+      });
   }
 }

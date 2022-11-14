@@ -8,13 +8,11 @@ class Favorites with ChangeNotifier {
   List<Song> _songs = [];
 
   List<Song> get songs => _songs;
+  bool _songInList = false;
+  bool get isSongInList => _songInList;
 
-  bool isSongInList(Song s) {
-    var state = false;
-    if (songs.contains(s)) {
-      state = true;
-    }
-    return state;
+  void setSongInList(bool val) {
+    _songInList = val;
   }
 
   void addFavorite(Song s) {

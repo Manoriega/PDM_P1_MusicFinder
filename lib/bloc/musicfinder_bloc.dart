@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -31,6 +32,27 @@ class MusicfinderBloc extends Bloc<MusicfinderEvent, MusicfinderState> {
         emit(SearchFailedState(errorMsg: "No se encontró ninguna canción"));
       } else {
         Song song = Song(res['result']);
+        var songDoc = await FirebaseFirestore.instance
+            .collection("music_finder_songs")
+            .doc(song.title)
+            .get();
+        if (!songDoc.exists) {
+          await FirebaseFirestore.instance
+              .collection("music_finder_songs")
+              .doc(song.title)
+              .set(
+            {
+              "artist": song.artist,
+              "title": song.title,
+              "album": song.album,
+              "releaseDate": song.releaseDate,
+              "songLink": song.songLink,
+              "spotifyLink": song.spotifyLink,
+              "appleLink": song.appleLink,
+              "image": song.image
+            },
+          );
+        }
         emit(SearchSucceedState(song: song));
       }
     } on Exception catch (e) {
@@ -44,7 +66,8 @@ class MusicfinderBloc extends Bloc<MusicfinderEvent, MusicfinderState> {
       var request = http.MultipartRequest("POST", uri);
 
       // Parametros
-      request.fields['api_token'] = ""; // Ingresar token de audD.io
+      request.fields['api_token'] =
+          "f5af113ab36b7c5ec93874be8cb2e7d7"; // Ingresar token de audD.io
       request.fields['return'] = "apple_music,spotify";
       request.fields['audio'] = audio;
 
